@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT-API Demo</title>
+    <!-- Include Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <!-- Include FBXLoader -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+</head>
+<body>
+    <h1>GPT-API Demo</h1>
+    <form id="gpt-form">
+        <label for="prompt">Enter your prompt (model name):</label>
+        <input type="text" id="prompt" name="prompt" required>
+        <button type="submit">Submit</button>
+    </form>
+    <h2>Response:</h2>
+    <p id="response"></p>
+
+    <!-- WebGL output for Three.js scene -->
+    <div id="WebGL-output"></div>
+
+    <script type="module" src="client.js"></script>
+    <!-- JavaScript to handle form submission and model loading -->
+    
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8" />
+  <title>A-Frame with Facial Expression and Speech Recognition</title>
+  <!-- A-Frame Library -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <!-- face-api.js -->
+  <script src="js/face-api.js"></script>
+  <script src="socket.io/socket.io.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    #emotion-labels {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 5px;
+      z-index: 1000;
+    }
+
+    #speech-output {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 5px;
+      z-index: 1000;
+      text-align: right;
+      max-width: 300px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #speech-transcript {
+      display: inline-block;
+      margin-left: 10px;
+      color: #007bff;
+      font-weight: bold;
+    }
+
+    #toggle-mode {
+      position: absolute;
+      top: 130px;
+      right: 10px;
+      padding: 10px 20px;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 1000;
+      background-color: #6c757d;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #toggle-mode:hover {
+      background-color: #495057;
+    }
+
+    #video {
+      width: 720px;
+      height: 560px;
+      position: absolute;
+      top: 0;
+      right: 0;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="emotion-labels">表情を認識中...</div>
+  <div id="speech-output">
+    音声認識結果: <span id="speech-transcript">-</span>
+  </div>
+  <video id="video" autoplay muted></video>
+
+  <button id="toggle-mode">Switch to ChatGPT</button>
+
+  <a-scene>
+    <!-- 背景と地面 -->
+    <a-sky color="black"></a-sky>
+    <a-plane rotation="-90 0 0" width="10" height="10" color="#7BC8A4"></a-plane>
+
+    <!-- プレイヤーエンティティ -->
+    <a-entity id="player" camera look-controls wasd-controls="acceleration: 20" position="0 1.6 0" jump
+      collision-detection moving>
+      <a-entity id="player-body" scale="0.4 0.5 0.5" position="0 -0.5 -0.8" visible="false">
+        <a-sphere id="mybody" radius="0.3" scale="1 0.9 0.8"></a-sphere>
+      </a-entity>
+    </a-entity>
+  </a-scene>
+
+  <!-- スクリプト -->
+  <script src="js/face_reco.js"></script>
+  <script src="js/avatar.js"></script>
+  <script src="js/socket.js"></script>
+
+  <!-- Web Speech APIとモード切り替えのスクリプト -->
+  <script>
+    let expressionMode = "rule"; // 初期モードはルールベース
+
+    // 音声認識の設定
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+
+      recognition.lang = 'ja-JP'; // 言語設定
+      recognition.interimResults = true; // 暫定結果の取得
+      recognition.continuous = true; // 継続認識を有効化
+
+      recognition.onstart = () => {
+        console.log("音声認識を開始しました");
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript; // 認識結果を取得
+        }
+
+        // 結果を画面に表示
+        const speechOutput = document.getElementById("speech-transcript");
+        if (speechOutput) {
+          speechOutput.textContent = transcript;
+        }
+
+        console.log(`音声認識結果: ${transcript}`);
+        console.log(`現在のモード: ${expressionMode}`);
+
+        // 現在のモードに応じた処理を実行
+        if (expressionMode === "rule") {
+          updateAvatarExpressionFromSpeech(transcript); // ルールベース処理
+        } else if (expressionMode === "gpt") {
+          updateAvatarExpressionFromGPT(transcript); // ChatGPT処理
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error("音声認識エラー:", event.error);
+      };
+
+      recognition.onend = () => {
+        console.log("音声認識が終了しました");
+        recognition.start(); // 常時音声認識を再開
+      };
+
+      // 音声認識を常時実行
+      recognition.start();
+
+      // モード切り替えボタン
+      document.getElementById("toggle-mode").addEventListener("click", () => {
+        if (expressionMode === "rule") {
+          expressionMode = "gpt";
+          document.getElementById("toggle-mode").textContent = "Switch to Rule-Based";
+          console.log("モードをChatGPTに変更しました");
+        } else {
+          expressionMode = "rule";
+          document.getElementById("toggle-mode").textContent = "Switch to ChatGPT";
+          console.log("モードをルールベースに変更しました");
+        }
+      });
+    } else {
+      console.error("このブラウザはWeb Speech APIをサポートしていません");
+      alert("お使いのブラウザは音声認識に対応していません。");
+    }
+  </script>
+</body>
+
+</html>
